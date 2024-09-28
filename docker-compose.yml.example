@@ -1,0 +1,28 @@
+services:
+  vault-server:
+    image: hashicorp/vault:latest
+    ....
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep vault > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  vault-script:
+    build: .
+    container_name: vault-script
+    restart: on-failure
+    depends_on:
+      vault-server:
+        condition: service_healthy
+    environment:
+      VAULT_URL: "http://vault-server:8200"
+      UNSEAL_THRESHOLD: 3
+      RECOVERY_SHARES: 7
+    volumes:
+      - ./unseal:/unseal
+    security_opt:
+      - no-new-privileges
+    tmpfs:
+      - /tmp
